@@ -1,0 +1,1 @@
+Open the README.txt within the folder for the Zen Cart version you are installing.
