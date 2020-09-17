@@ -1,10 +1,10 @@
 <?php
 /**
  * @package admin
- * @copyright Copyright 2003-2018 Zen Cart Development Team
+ * @copyright Copyright 2003-2019 Zen Cart Development Team
  * @copyright Portions Copyright 2003 osCommerce
  * @license http://www.zen-cart.com/license/2_0.txt GNU Public License V2.0
- * @version $Id: Zcwilt Thu Nov 29 15:57:26 2018 +0000 Modified in v1.5.6 $
+ * @version $Id: Zen4All 2019 Mar 13 Modified in v1.5.6b $
  */
 require('includes/application_top.php');
 
@@ -101,21 +101,21 @@ if (zen_not_null($action)) {
   switch ($action) {
     case ('update'):
 
-      if ($_POST['master_category']) {
+      if (!empty($_POST['master_category'])) {
         $master_categories_id = $_POST['master_category'];
       } else {
         $master_categories_id = $_POST['master_categories_id'];
       }
 
-      $products_date_available = ((zen_db_prepare_input($_POST['product_start']) == '') ? '0001-01-01' : zen_date_raw($_POST['product_start']));
+      $products_date_available = ((!isset($_POST['product_start']) || zen_db_prepare_input($_POST['product_start']) == '') ? '0001-01-01' : zen_date_raw($_POST['product_start']));
 
-      $specials_date_available = ((zen_db_prepare_input($_POST['special_start']) == '') ? '0001-01-01' : zen_date_raw($_POST['special_start']));
-      $specials_expires_date = ((zen_db_prepare_input($_POST['special_end']) == '') ? '0001-01-01' : zen_date_raw($_POST['special_end']));
+      $specials_date_available = ((!isset($_POST['special_start']) || zen_db_prepare_input($_POST['special_start']) == '') ? '0001-01-01' : zen_date_raw($_POST['special_start']));
+      $specials_expires_date = ((!isset($_POST['special_end']) || zen_db_prepare_input($_POST['special_end']) == '') ? '0001-01-01' : zen_date_raw($_POST['special_end']));
 
-      $featured_date_available = ((zen_db_prepare_input($_POST['featured_start']) == '') ? '0001-01-01' : zen_date_raw($_POST['featured_start']));
-      $featured_expires_date = ((zen_db_prepare_input($_POST['featured_end']) == '') ? '0001-01-01' : zen_date_raw($_POST['featured_end']));
+      $featured_date_available = ((!isset($_POST['featured_start']) || zen_db_prepare_input($_POST['featured_start']) == '') ? '0001-01-01' : zen_date_raw($_POST['featured_start']));
+      $featured_expires_date = ((!isset($_POST['featured_end']) || zen_db_prepare_input($_POST['featured_end']) == '') ? '0001-01-01' : zen_date_raw($_POST['featured_end']));
 
-      $tmp_value = zen_db_prepare_input($_POST['products_price_sorter']);
+      $tmp_value = (isset($_POST['products_price_sorter']) ? zen_db_prepare_input($_POST['products_price_sorter']) : '');
       $products_price_sorter = (!zen_not_null($tmp_value) || $tmp_value == '' || $tmp_value == 0) ? 0 : $tmp_value;
 
       $sql = "UPDATE " . TABLE_PRODUCTS . "
@@ -155,11 +155,11 @@ if (zen_not_null($action)) {
       $sql = $db->bindVars($sql, ':isCall:', $_POST['product_is_call'], 'integer');
       $sql = $db->bindVars($sql, ':qtyMixed:', $_POST['products_quantity_mixed'], 'integer');
       $sql = $db->bindVars($sql, ':pricedByAttr:', $_POST['products_priced_by_attribute'], 'integer');
-      $sql = $db->bindVars($sql, ':discType:', $_POST['products_discount_type'], 'integer');
-      $sql = $db->bindVars($sql, ':discTypeFrom:', $_POST['products_discount_type_from'], 'integer');
+      $sql = $db->bindVars($sql, ':discType:', (isset($_POST['products_discount_type']) ? $_POST['products_discount_type'] : 0), 'integer');
+      $sql = $db->bindVars($sql, ':discTypeFrom:', (isset($_POST['products_discount_type_from']) ? $_POST['products_discount_type_from'] : 0), 'integer');
       $sql = $db->bindVars($sql, ':discPriceSorter:', $products_price_sorter, 'string');
       $sql = $db->bindVars($sql, ':masterCatId:', $master_categories_id, 'integer');
-      $sql = $db->bindVars($sql, ':discQty:', $_POST['products_mixed_discount_quantity'], 'integer');
+      $sql = $db->bindVars($sql, ':discQty:', (isset($_POST['products_mixed_discount_quantity']) ? $_POST['products_mixed_discount_quantity'] : 0), 'integer');
 
       $db->Execute($sql);
 
@@ -178,7 +178,7 @@ if (zen_not_null($action)) {
 
         $specials_price = zen_db_prepare_input($_POST['specials_price']);
         if (substr($specials_price, -1) == '%') {
-          $specials_price = ($products_price - (($specials_price / 100) * $products_price));
+          $specials_price = ((float)$products_price - (((float)$specials_price / 100) * (float)$products_price));
         }
         $db->Execute("UPDATE " . TABLE_SPECIALS . "
                       SET specials_new_products_price = '" . zen_db_input($specials_price) . "',
@@ -196,7 +196,7 @@ if (zen_not_null($action)) {
                           expires_date = '" . zen_db_input($featured_expires_date) . "',
                           featured_last_modified = now(),
                           status = " . zen_db_input($_POST['featured_status']) . "
-                      WHRE products_id = " . (int)$products_filter);
+                      WHERE products_id = " . (int)$products_filter);
       }
 
       $db->Execute("DELETE FROM " . TABLE_PRODUCTS_DISCOUNT_QUANTITY . " WHERE products_id = " . (int)$products_filter);
@@ -207,10 +207,10 @@ if (zen_not_null($action)) {
         for ($i = 1, $n = sizeof($_POST['discount_qty']); $i <= $n; $i++) {
           if ($_POST['discount_qty'][$i] > 0) {
             $new_id++;
-            $db->Execute("INSERT INTO " . TABLE_PRODUCTS_DISCOUNT_QUANTITY . " (discount_id, products_id, discount_qty, discount_price)
+            $db->Execute("INSERT INTO " . TABLE_PRODUCTS_DISCOUNT_QUANTITY . "
 /* Dual Pricing start */
                           (discount_id, products_id, discount_qty, discount_price, discount_price_w)
-                          values ('" . $new_id . "', '" . $products_filter . "', '" . zen_db_input($_POST['discount_qty'][$i]) . "', '" . zen_db_input($_POST['discount_price'][$i]) . "', '" . zen_db_input($_POST['discount_price_w'][$i]) . "')");
+                          VALUES (" . (int)$new_id . ", " . (int)$products_filter . ", '" . zen_db_input($_POST['discount_qty'][$i]) . "', '" . zen_db_input($_POST['discount_price'][$i]) . "', '" . zen_db_input($_POST['discount_price_w'][$i]) . "')");
 /* Dual Pricing end */
             $discount_cnt++;
           }
@@ -641,12 +641,19 @@ if (zen_not_null($action)) {
             </table>
           <?php } ?>
 
-          <?php echo zen_draw_form('new_prices', FILENAME_PRODUCTS_PRICE_MANAGER, zen_get_all_get_params(array('action', 'info', $_GET['products_filter'])) . 'action=' . 'update', 'post', 'class="form-horizontal"'); ?>
+          <?php echo zen_draw_form('new_prices', FILENAME_PRODUCTS_PRICE_MANAGER, zen_get_all_get_params(array('action', 'info', $_GET['products_filter'])) . 'action=' . 'update', 'post', 'onsubmit="return check_dates_ppm(featured_start,FeaturedStartDate.required, featured_end, FeaturedEndDate.required, product_start, ProductStartDate.required);" class="form-horizontal"'); ?>
           <?php
+          if ($action == 'edit' || $action == 'edit_update') { 
+            $readonly = ''; 
+            $jsreadonly=''; 
+          } else {
+            $readonly=" readonly"; 
+            $jsreadonly = " disabled"; 
+          }
           echo zen_draw_hidden_field('products_id', $_GET['products_filter']);
           echo zen_draw_hidden_field('specials_id', isset($sInfo->specials_id) ? $sInfo->specials_id : '');
           echo zen_draw_hidden_field('featured_id', $fInfo->featured_id);
-          echo zen_draw_hidden_field('discounts_list', $discounts_qty);
+//          echo zen_draw_hidden_field('discounts_list', $discounts_qty);
           ?>
 
           <table class="table">
@@ -695,7 +702,7 @@ if (zen_not_null($action)) {
           <div class="well" style="color: #31708f;background-color: #d9edf7;border-color: #bce8f1;;padding: 10px 10px 0 0;">
             <div class="form-group"><?php echo zen_draw_label(TEXT_PRODUCTS_TAX_CLASS, 'products_tax_class_id', 'class="col-sm-3 control-label"'); ?>
               <div class="col-sm-9 col-md-6">
-                  <?php echo zen_draw_pull_down_menu('products_tax_class_id', $tax_class_array, $pInfo->products_tax_class_id, 'class="form-control"'); ?>
+                  <?php echo zen_draw_pull_down_menu('products_tax_class_id', $tax_class_array, $pInfo->products_tax_class_id, 'class="form-control"'.$readonly); ?>
               </div>
             </div>
           </div>
@@ -704,13 +711,13 @@ if (zen_not_null($action)) {
             <div class="form-group">
                 <?php echo zen_draw_label(TEXT_PRICE_NET, 'products_price', 'class="col-sm-3 control-label"'); ?>
               <div class="col-sm-9 col-md-6">
-                  <?php echo zen_draw_input_field('products_price', (isset($pInfo->products_price) ? $pInfo->products_price : ''), 'OnKeyUp="updateGross()" class="form-control"'); ?>
+                  <?php echo zen_draw_input_field('products_price', (isset($pInfo->products_price) ? $pInfo->products_price : ''), 'OnKeyUp="updateGross()" class="form-control"' . $readonly); ?>
               </div>
             </div>
             <div class="form-group">
                 <?php echo zen_draw_label(TEXT_PRICE_GROSS, 'products_price_gross', 'class="col-sm-3 control-label"'); ?>
               <div class="col-sm-9 col-md-6">
-                  <?php echo zen_draw_input_field('products_price_gross', (isset($pInfo->products_price) ? $pInfo->products_price : ''), 'OnKeyUp="updateNet()" class="form-control"'); ?>
+                  <?php echo zen_draw_input_field('products_price_gross', (isset($pInfo->products_price) ? $pInfo->products_price : ''), 'OnKeyUp="updateNet()" class="form-control"' . $readonly); ?>
               </div>
             </div>
 <!--- Dual Pricing start --->
@@ -726,6 +733,9 @@ if (zen_not_null($action)) {
               <?php echo zen_draw_label(TEXT_PRODUCT_AVAILABLE_DATE, 'product_start', 'class="col-sm-3 control-label"'); ?>
             <div class="col-sm-9 col-md-6">
               <script>
+              <?php if (!empty($readonly)) { ?>
+                ProductStartDate.readonly = true; 
+              <?php } ?>
                 ProductStartDate.writeControl();
                 ProductStartDate.dateFormat = "<?php echo DATE_FORMAT_SPIFFYCAL; ?>";
               </script>
@@ -734,39 +744,39 @@ if (zen_not_null($action)) {
           <div class="form-group">
             <div class="col-sm-offset-3 col-sm-9 col-md-6">
               <div class="radio-inline">
-                <label><?php echo zen_draw_radio_field('products_status', '1', $pInfo->products_status == '1') . TEXT_PRODUCT_AVAILABLE; ?></label>
+                <label><?php echo zen_draw_radio_field('products_status', '1', $pInfo->products_status == '1', '', $jsreadonly) . TEXT_PRODUCT_AVAILABLE; ?></label>
               </div>
               <div class="radio-inline">
-                <label><?php echo zen_draw_radio_field('products_status', '0', $pInfo->products_status == '0') . TEXT_PRODUCT_NOT_AVAILABLE; ?></label>
+                <label><?php echo zen_draw_radio_field('products_status', '0', $pInfo->products_status == '0', '', $jsreadonly) . TEXT_PRODUCT_NOT_AVAILABLE; ?></label>
               </div>
             </div>
           </div>
           <div class="form-group">
               <?php echo zen_draw_label(TEXT_PRODUCTS_QUANTITY_MIN_RETAIL, 'products_quantity_order_min', 'class="col-sm-3 control-label"'); ?>
             <div class="col-sm-9 col-md-6">
-                <?php echo zen_draw_input_field('products_quantity_order_min', ($pInfo->products_quantity_order_min == 0 ? 1 : $pInfo->products_quantity_order_min), 'size="6" class="form-control"'); ?>
+                <?php echo zen_draw_input_field('products_quantity_order_min', ($pInfo->products_quantity_order_min == 0 ? 1 : $pInfo->products_quantity_order_min), 'size="6" class="form-control"'.$readonly); ?>
             </div>
           </div>
           <div class="form-group">
               <?php echo zen_draw_label(TEXT_PRODUCTS_QUANTITY_UNITS_RETAIL, 'products_quantity_order_units', 'class="col-sm-3 control-label"'); ?>
             <div class="col-sm-9 col-md-6">
-                <?php echo zen_draw_input_field('products_quantity_order_units', ($pInfo->products_quantity_order_units == 0 ? 1 : $pInfo->products_quantity_order_units), 'size="6" class="form-control"'); ?>
+                <?php echo zen_draw_input_field('products_quantity_order_units', ($pInfo->products_quantity_order_units == 0 ? 1 : $pInfo->products_quantity_order_units), 'size="6" class="form-control"'.$readonly); ?>
             </div>
           </div>
           <div class="form-group">
               <?php echo zen_draw_label(TEXT_PRODUCTS_QUANTITY_MAX_RETAIL, 'products_quantity_order_max', 'class="col-sm-3 control-label"'); ?>
             <div class="col-sm-9 col-md-6">
-              <?php echo zen_draw_input_field('products_quantity_order_max', $pInfo->products_quantity_order_max, 'size="6" class="form-control"'); ?><span class="help-block"><?php echo TEXT_PRODUCTS_QUANTITY_MAX_RETAIL_EDIT; ?></span>
+              <?php echo zen_draw_input_field('products_quantity_order_max', $pInfo->products_quantity_order_max, 'size="6" class="form-control"'.$readonly); ?><span class="help-block"><?php echo TEXT_PRODUCTS_QUANTITY_MAX_RETAIL_EDIT; ?></span>
             </div>
           </div>
           <div class="form-group">
               <?php echo zen_draw_label(TEXT_PRODUCTS_MIXED, 'products_quantity_mixed', 'class="col-sm-3 control-label"'); ?>
             <div class="col-sm-9 col-md-6">
               <div class="radio-inline">
-                <label><?php echo zen_draw_radio_field('products_quantity_mixed', '1', $pInfo->products_quantity_mixed == 1) . TEXT_YES; ?></label>
+                <label><?php echo zen_draw_radio_field('products_quantity_mixed', '1', $pInfo->products_quantity_mixed == 1, '', $jsreadonly) . TEXT_YES; ?></label>
               </div>
               <div class="radio-inline">
-                <label><?php echo zen_draw_radio_field('products_quantity_mixed', '0', $pInfo->products_quantity_mixed == 0) . TEXT_NO; ?></label>
+                <label><?php echo zen_draw_radio_field('products_quantity_mixed', '0', $pInfo->products_quantity_mixed == 0, '', $jsreadonly) . TEXT_NO; ?></label>
               </div>
             </div>
           </div>
@@ -774,10 +784,10 @@ if (zen_not_null($action)) {
               <?php echo zen_draw_label(TEXT_PRODUCT_IS_FREE, 'product_is_free', 'class="col-sm-3 control-label"'); ?>
             <div class="col-sm-9 col-md-6">
               <div class="radio-inline">
-                <label><?php echo zen_draw_radio_field('product_is_free', '1', ($pInfo->product_is_free == 1)) . TEXT_YES; ?></label>
+                <label><?php echo zen_draw_radio_field('product_is_free', '1', ($pInfo->product_is_free == 1), '', $jsreadonly) . TEXT_YES; ?></label>
               </div>
               <div class="radio-inline">
-                <label><?php echo zen_draw_radio_field('product_is_free', '0', ($pInfo->product_is_free == 0)) . TEXT_NO; ?></label>
+                <label><?php echo zen_draw_radio_field('product_is_free', '0', ($pInfo->product_is_free == 0), '', $jsreadonly) . TEXT_NO; ?></label>
               </div>
               <?php echo ($pInfo->product_is_free == 1 ? '<span class="help-block errorText">' . TEXT_PRODUCTS_IS_FREE_EDIT . '</span>' : ''); ?>
             </div>
@@ -786,10 +796,10 @@ if (zen_not_null($action)) {
               <?php echo zen_draw_label(TEXT_PRODUCT_IS_CALL, 'product_is_call', 'class="col-sm-3 control-label"'); ?>
             <div class="col-sm-9 col-md-6">
               <div class="radio-inline">
-                <label><?php echo zen_draw_radio_field('product_is_call', '1', ($pInfo->product_is_call == 1)) . TEXT_YES; ?></label>
+                <label><?php echo zen_draw_radio_field('product_is_call', '1', ($pInfo->product_is_call == 1), '', $jsreadonly) . TEXT_YES; ?></label>
               </div>
               <div class="radio-inline">
-                <label><?php echo zen_draw_radio_field('product_is_call', '0', ($pInfo->product_is_call == 0)) . TEXT_NO; ?></label>
+                <label><?php echo zen_draw_radio_field('product_is_call', '0', ($pInfo->product_is_call == 0), '', $jsreadonly) . TEXT_NO; ?></label>
               </div>
               <?php echo ($pInfo->product_is_call == 1 ? '<span class="help-block errorText">' . TEXT_PRODUCTS_IS_CALL_EDIT . '</span>' : ''); ?>
             </div>
@@ -798,10 +808,10 @@ if (zen_not_null($action)) {
               <?php echo zen_draw_label(TEXT_PRODUCTS_PRICED_BY_ATTRIBUTES, 'products_priced_by_attribute', 'class="col-sm-3 control-label"'); ?>
             <div class="col-sm-9 col-md-6">
               <div class="radio-inline">
-                <label><?php echo zen_draw_radio_field('products_priced_by_attribute', '1', $pInfo->products_priced_by_attribute == 1) . TEXT_PRODUCT_IS_PRICED_BY_ATTRIBUTE; ?></label>
+                <label><?php echo zen_draw_radio_field('products_priced_by_attribute', '1', $pInfo->products_priced_by_attribute == 1, '', $jsreadonly) . TEXT_PRODUCT_IS_PRICED_BY_ATTRIBUTE; ?></label>
               </div>
               <div class="radio-inline">
-                <label><?php echo zen_draw_radio_field('products_priced_by_attribute', '0', $pInfo->products_priced_by_attribute == 0) . TEXT_PRODUCT_NOT_PRICED_BY_ATTRIBUTE; ?></label>
+                <label><?php echo zen_draw_radio_field('products_priced_by_attribute', '0', $pInfo->products_priced_by_attribute == 0, '', $jsreadonly) . TEXT_PRODUCT_NOT_PRICED_BY_ATTRIBUTE; ?></label>
               </div>
               <?php echo ($pInfo->products_priced_by_attribute == 1 ? '<span class="help-block errorText">' . TEXT_PRODUCTS_PRICED_BY_ATTRIBUTES_EDIT . '</span>' : ''); ?>
             </div>
@@ -818,13 +828,13 @@ if (zen_not_null($action)) {
               <div class="form-group">
                   <?php echo zen_draw_label(TEXT_SPECIALS_SPECIAL_PRICE_NET, 'specials_price', 'class="col-sm-3 control-label"'); ?>
                 <div class="col-sm-9 col-md-6">
-                    <?php echo zen_draw_input_field('specials_price', (isset($sInfo->specials_new_products_price) ? $sInfo->specials_new_products_price : ''), 'OnKeyUp="updateSpecialsGross()" class="form-control"'); ?>
+                    <?php echo zen_draw_input_field('specials_price', (isset($sInfo->specials_new_products_price) ? $sInfo->specials_new_products_price : ''), 'OnKeyUp="updateSpecialsGross()" class="form-control"' . $readonly); ?>
                 </div>
               </div>
               <div class="form-group">
                   <?php echo zen_draw_label(TEXT_SPECIALS_SPECIAL_PRICE_GROSS, 'specials_price_gross', 'class="col-sm-3 control-label"'); ?>
                 <div class="col-sm-9 col-md-6">
-                    <?php echo zen_draw_input_field('specials_price_gross', (isset($sInfo->specials_new_products_price) ? $sInfo->specials_new_products_price : ''), 'OnKeyUp="updateSpecialsNet()" class="form-control"'); ?>
+                    <?php echo zen_draw_input_field('specials_price_gross', (isset($sInfo->specials_new_products_price) ? $sInfo->specials_new_products_price : ''), 'OnKeyUp="updateSpecialsNet()" class="form-control"' . $readonly); ?>
                 </div>
               </div>
             </div>
@@ -832,6 +842,9 @@ if (zen_not_null($action)) {
                 <?php echo zen_draw_label(TEXT_SPECIALS_AVAILABLE_DATE, 'special_start', 'class="col-sm-3 control-label"'); ?>
               <div class="col-sm-9 col-md-6">
                 <script>
+              <?php if (!empty($readonly)) { ?>
+                SpecialStartDate.readonly = true; 
+              <?php } ?>
                   SpecialStartDate.writeControl();
                   SpecialStartDate.dateFormat = "<?php echo DATE_FORMAT_SPIFFYCAL; ?>";
                 </script>
@@ -841,6 +854,9 @@ if (zen_not_null($action)) {
                 <?php echo zen_draw_label(TEXT_SPECIALS_EXPIRES_DATE, 'special_end', 'class="col-sm-3 control-label"'); ?>
               <div class="col-sm-9 col-md-6">
                 <script>
+              <?php if (!empty($readonly)) { ?>
+                SpecialEndDate.readonly = true; 
+              <?php } ?>
                   SpecialEndDate.writeControl();
                   SpecialEndDate.dateFormat = "<?php echo DATE_FORMAT_SPIFFYCAL; ?>";
                 </script>
@@ -850,10 +866,10 @@ if (zen_not_null($action)) {
                 <?php echo zen_draw_label(TEXT_SPECIALS_PRODUCTS_STATUS, 'special_status', 'class="col-sm-3 control-label"'); ?>
               <div class="col-sm-9 col-md-6">
                 <div class="radio-inline">
-                  <label><?php echo zen_draw_radio_field('special_status', '1', $sInfo->status == 1) . TEXT_SPECIALS_PRODUCT_AVAILABLE; ?></label>
+                  <label><?php echo zen_draw_radio_field('special_status', '1', $sInfo->status == 1, '', $jsreadonly) . TEXT_SPECIALS_PRODUCT_AVAILABLE; ?></label>
                 </div>
                 <div class="radio-inline">
-                  <label><?php echo zen_draw_radio_field('special_status', '0', $sInfo->status == 0) . TEXT_SPECIALS_PRODUCT_NOT_AVAILABLE; ?></label>
+                  <label><?php echo zen_draw_radio_field('special_status', '0', $sInfo->status == 0, '', $jsreadonly) . TEXT_SPECIALS_PRODUCT_NOT_AVAILABLE; ?></label>
                 </div>
               </div>
             </div>
@@ -908,6 +924,9 @@ if (zen_not_null($action)) {
                 <?php echo zen_draw_label(TEXT_FEATURED_AVAILABLE_DATE, 'featured_start', 'class="control-label col-sm-3"'); ?>
               <div class="col-sm-9 col-md-6">
                 <script>
+              <?php if (!empty($readonly)) { ?>
+                FeaturedStartDate.readonly = true; 
+              <?php } ?>
                   FeaturedStartDate.writeControl();
                   FeaturedStartDate.dateFormat = "<?php echo DATE_FORMAT_SPIFFYCAL; ?>";
                 </script>
@@ -917,6 +936,9 @@ if (zen_not_null($action)) {
                 <?php echo zen_draw_label(TEXT_FEATURED_EXPIRES_DATE, 'featured_end', 'class="control-label col-sm-3"'); ?>
               <div class="col-sm-9 col-md-6">
                 <script>
+              <?php if (!empty($readonly)) { ?>
+                FeaturedEndDate.readonly = true; 
+              <?php } ?>
                   FeaturedEndDate.writeControl();
                   FeaturedEndDate.dateFormat = "<?php echo DATE_FORMAT_SPIFFYCAL; ?>";
                 </script>
@@ -926,10 +948,10 @@ if (zen_not_null($action)) {
                 <?php echo zen_draw_label(TEXT_FEATURED_PRODUCTS_STATUS, 'featured_status', 'class="control-label col-sm-3"'); ?>
               <div class="col-sm-9 col-md-6">
                 <div class="radio-inline">
-                  <label><?php echo zen_draw_radio_field('featured_status', '1', $fInfo->status == 1) . TEXT_FEATURED_PRODUCT_AVAILABLE; ?></label>
+                  <label><?php echo zen_draw_radio_field('featured_status', '1', $fInfo->status == 1, '', $jsreadonly) . TEXT_FEATURED_PRODUCT_AVAILABLE; ?></label>
                 </div>
                 <div class="radio-inline">
-                  <label><?php echo zen_draw_radio_field('featured_status', '0', $fInfo->status == 0) . TEXT_FEATURED_PRODUCT_NOT_AVAILABLE; ?></label>
+                  <label><?php echo zen_draw_radio_field('featured_status', '0', $fInfo->status == 0, '', $jsreadonly) . TEXT_FEATURED_PRODUCT_NOT_AVAILABLE; ?></label>
                 </div>
               </div>
             </div>
@@ -970,7 +992,7 @@ if (zen_not_null($action)) {
               $discount_name[] = array('id' => $i,
                 'discount_qty' => $discount_qty['discount_qty'],
 // Dual Pricing start
-		'discount_price_w' => $discounts_qty->fields['discount_price_w']);
+		'discount_price_w' => $discounts_qty['discount_price_w'],
 // Dual Pricing end
                 'discount_price' => $discount_qty['discount_price']);
             }
@@ -978,28 +1000,28 @@ if (zen_not_null($action)) {
 <!-- Dual Pricing start -->
 	    <?php echo TEXT_PRODUCTS_MIXED_DISCOUNT_QUANTITY; ?>&nbsp;&nbsp;<?php echo zen_draw_radio_field('products_mixed_discount_quantity', '1', $in_products_mixed_discount_quantity==1) . '&nbsp;' . TEXT_YES . '&nbsp;&nbsp;' . zen_draw_radio_field('products_mixed_discount_quantity', '0', $out_products_mixed_discount_quantity) . '&nbsp;' . TEXT_NO; ?>
 <!-- Dual Pricing end -->
-	    <div class="col-sm-12"><?php echo TEXT_DISCOUNT_TYPE_INFO; ?></div>
+            <div class="col-sm-12"><?php echo TEXT_DISCOUNT_TYPE_INFO; ?></div>
             <div class="form-group">
                 <?php echo zen_draw_label(TEXT_PRODUCTS_MIXED_DISCOUNT_QUANTITY, 'products_mixed_discount_quantity', 'class="control-label col-sm-3"'); ?>
               <div class="col-sm-9 col-md-6">
                 <div class="radio-inline">
-                  <label><?php echo zen_draw_radio_field('products_mixed_discount_quantity', '1', $pInfo->products_mixed_discount_quantity == 1) . TEXT_YES; ?></label>
+                  <label><?php echo zen_draw_radio_field('products_mixed_discount_quantity', '1', $pInfo->products_mixed_discount_quantity == 1, '', $jsreadonly) . TEXT_YES; ?></label>
                 </div>
                 <div class="radio-inline">
-                  <label><?php echo zen_draw_radio_field('products_mixed_discount_quantity', '0', $pInfo->products_mixed_discount_quantity == 0) . TEXT_NO; ?></label>
+                  <label><?php echo zen_draw_radio_field('products_mixed_discount_quantity', '0', $pInfo->products_mixed_discount_quantity == 0, '', $jsreadonly) . TEXT_NO; ?></label>
                 </div>
               </div>
             </div>
             <div class="form-group">
                 <?php echo zen_draw_label(TEXT_DISCOUNT_TYPE, 'products_discount_type', 'class="control-label col-sm-3"'); ?>
               <div class="col-sm-9 col-md-6">
-                  <?php echo zen_draw_pull_down_menu('products_discount_type', $discount_type_array, $pInfo->products_discount_type, 'class="form-control"'); ?>
+                  <?php echo zen_draw_pull_down_menu('products_discount_type', $discount_type_array, $pInfo->products_discount_type, 'class="form-control"'.$readonly); ?>
               </div>
             </div>
             <div class="form-group">
                 <?php echo zen_draw_label(TEXT_DISCOUNT_TYPE_FROM, 'products_discount_type_from', 'class="control-label col-sm-3"'); ?>
               <div class="col-sm-9 col-md-6">
-                  <?php echo zen_draw_pull_down_menu('products_discount_type_from', $discount_type_from_array, $pInfo->products_discount_type_from, 'class="form-control"'); ?>
+                  <?php echo zen_draw_pull_down_menu('products_discount_type_from', $discount_type_from_array, $pInfo->products_discount_type_from, 'class="form-control"'. $readonly); ?>
               </div>
             </div>
             <div class="table-responsive">
@@ -1010,28 +1032,25 @@ if (zen_not_null($action)) {
                     <th class="main" align="center"><?php echo TEXT_PRODUCTS_DISCOUNT_QTY; ?></th>
                     <th class="main" align="center"><?php echo TEXT_PRODUCTS_DISCOUNT_PRICE; ?></th>
 // Dual Pricing start
-	            <td class="main" align="center"><?php echo TEXT_PRODUCTS_DISCOUNT_PRICE_W; ?></td>
+	            <th class="main" align="center"><?php echo TEXT_PRODUCTS_DISCOUNT_PRICE_W; ?></th>
 // Dual Pricing end
                     <?php
                     if (DISPLAY_PRICE_WITH_TAX_ADMIN == 'true') {
                       ?>
-            <td class="main" align="center"><?php echo TEXT_PRODUCTS_DISCOUNT_PRICE_EACH_TAX; ?></td>
+                      <th class="main" align="center"><?php echo TEXT_PRODUCTS_DISCOUNT_PRICE_EACH_TAX; ?></th>
 // Dual Pricing start
-	            <td class="main" align="center"><?php echo TEXT_PRODUCTS_DISCOUNT_PRICE_EACH_TAX_W; ?></td>
+	            <th class="main" align="center"><?php echo TEXT_PRODUCTS_DISCOUNT_PRICE_EACH_TAX_W; ?></th>
 // Dual Pricing end
-                    <td class="main" align="center"><?php echo TEXT_PRODUCTS_DISCOUNT_PRICE_EXTENDED_TAX; ?></td>
-
+                      <th class="main" align="center"><?php echo TEXT_PRODUCTS_DISCOUNT_PRICE_EXTENDED_TAX; ?></th>
                     <?php } else { ?>
-            <td class="main" align="center"><?php echo TEXT_PRODUCTS_DISCOUNT_PRICE_EACH; ?></td>
+                      <th class="main" align="center"><?php echo TEXT_PRODUCTS_DISCOUNT_PRICE_EACH; ?></th>
 // Dual Pricing start
-	        <td class="main" align="center"><?php echo TEXT_PRODUCTS_DISCOUNT_PRICE_EACH_W; ?></td>
-
+	        <th class="main" align="center"><?php echo TEXT_PRODUCTS_DISCOUNT_PRICE_EACH_W; ?></th>
 // Dual Pricing end
-            <td class="main" align="center"><?php echo TEXT_PRODUCTS_DISCOUNT_PRICE_EXTENDED; ?></td>
+                      <th class="main" align="center"><?php echo TEXT_PRODUCTS_DISCOUNT_PRICE_EXTENDED; ?></th>
 // Dual Pricing start
-	       <td class="main" align="center"><?php echo TEXT_PRODUCTS_DISCOUNT_PRICE_EXTENDED_W; ?></td>
+	       <th class="main" align="center"><?php echo TEXT_PRODUCTS_DISCOUNT_PRICE_EXTENDED_W; ?></th>
 // Dual Pricing end
-
                     <?php } ?>
                   </tr>
                 </thead>
@@ -1064,53 +1083,53 @@ if (zen_not_null($action)) {
                             }
                           }
 
-          break;
-        // actual price
-        case '2':
-          if ($pInfo->products_discount_type_from == '0') {
-            $discounted_price = $discount_name[$i]['discount_price'];
+                          break;
+                        // actual price
+                        case '2':
+                          if ($pInfo->products_discount_type_from == '0') {
+                            $discounted_price = $discount_name[$i]['discount_price'];
 // Dual Pricing start
 	        $discounted_price_w = $discount_name[$i]['discount_price_w'];
-          } else {
-            $discounted_price = $discount_name[$i]['discount_price'];
+                          } else {
+                            $discounted_price = $discount_name[$i]['discount_price'];
             $discounted_price_w = $discount_name[$i]['discount_price_w'];
-          }
-          break;
-        // amount offprice
-        case '3':
-          if ($pInfo->products_discount_type_from == '0') {
-            $discounted_price = $display_price - $discount_name[$i]['discount_price'];
+                          }
+                          break;
+                        // amount offprice
+                        case '3':
+                          if ($pInfo->products_discount_type_from == '0') {
+                            $discounted_price = $display_price - $discount_name[$i]['discount_price'];
             $discounted_price_w = $display_price_w - $discount_name[$i]['discount_price_w'];
-          } else {
-            if (!$display_specials_price) {
-              $discounted_price = $display_price - $discount_name[$i]['discount_price'];
+                          } else {
+                            if (!$display_specials_price) {
+                              $discounted_price = $display_price - $discount_name[$i]['discount_price'];
               $discounted_price_w = $display_price_w - $discount_name[$i]['discount_price_w'];
 // Dual Pricing end            
-	    } else {
-              $discounted_price = $display_specials_price - $discount_name[$i]['discount_price'];
-            }
-          }
-          break;
-      }
-?>
+                            } else {
+                              $discounted_price = $display_specials_price - $discount_name[$i]['discount_price'];
+                            }
+                          }
+                          break;
+                      }
+                      ?>
                     <tr>
                       <td class="main"><?php echo TEXT_PRODUCTS_DISCOUNT . ' ' . $discount_name[$i]['id']; ?></td>
-                      <td class="main"><?php echo zen_draw_input_field('discount_qty[' . $discount_name[$i]['id'] . ']', $discount_name[$i]['discount_qty'], 'class="form-control"'); ?></td>
-                      <td class="main"><?php echo zen_draw_input_field('discount_price[' . $discount_name[$i]['id'] . ']', $discount_name[$i]['discount_price'], 'class="form-control"'); ?></td>
+                      <td class="main"><?php echo zen_draw_input_field('discount_qty[' . $discount_name[$i]['id'] . ']', $discount_name[$i]['discount_qty'], 'class="form-control"'.$readonly); ?></td>
+                      <td class="main"><?php echo zen_draw_input_field('discount_price[' . $discount_name[$i]['id'] . ']', $discount_name[$i]['discount_price'], 'class="form-control"' . $readonly); ?></td>
 // Dual Pricing start
-	        <td class="main"><?php echo zen_draw_input_field('discount_price_w[' . $discount_name[$i]['id'] . ']', $discount_name[$i]['discount_price_w'], 'class="form-control"'); ?></td>
-<?php
-  if (DISPLAY_PRICE_WITH_TAX_ADMIN == 'true') {
-?>
-            <td class="main" align="right"><?php echo $currencies->display_price($discounted_price, '', 1) . ' ' . $currencies->display_price($discounted_price, zen_get_tax_rate(1), 1); ?></td>
-	    <td class="main" align="right"><?php echo $currencies->display_price_w($discounted_price_w, '', 1) . ' ' . $currencies->display_price_w($discounted_price_w, zen_get_tax_rate(1), 1); ?></td>
-            <td class="main" align="right"><?php echo ' x ' . number_format($discount_name[$i]['discount_qty']) . ' = ' . $currencies->display_price($discounted_price, '', $discount_name[$i]['discount_qty']) . ' ' . $currencies->display_price($discounted_price, zen_get_tax_rate(1), $discount_name[$i]['discount_qty']); ?></td>
-	    <td class="main" align="right"><?php echo ' x ' . number_format($discount_name[$i]['discount_qty']) . ' = ' . $currencies->display_price_w($discounted_price_w, '', $discount_name[$i]['discount_qty']) . ' ' . $currencies->display_price_w($discounted_price_w, zen_get_tax_rate(1), $discount_name[$i]['discount_qty']); ?></td>
-<?php } else { ?>
-            <td class="main" align="right"><?php echo $currencies->display_price($discounted_price, '', 1); ?></td>
-	    <td class="main" align="right"><?php echo $currencies->display_price($discounted_price_w, '', 1); ?></td>
-            <td class="main" align="right"><?php echo ' x ' . number_format($discount_name[$i]['discount_qty']) . ' = ' . $currencies->display_price($discounted_price, '', $discount_name[$i]['discount_qty']); ?></td>
-	    <td class="main" align="right"><?php echo ' x ' . number_format($discount_name[$i]['discount_qty']) . ' = ' . $currencies->display_price($discounted_price_w, '', $discount_name[$i]['discount_qty']); ?></td>
+		      <td class="main"><?php echo zen_draw_input_field('discount_price_w[' . $discount_name[$i]['id'] . ']', $discount_name[$i]['discount_price_w'], 'class="form-control"'); ?></td>
+                      <?php
+                      if (DISPLAY_PRICE_WITH_TAX_ADMIN == 'true') {
+                        ?>
+                        <td class="main text-right"><?php echo $currencies->display_price($discounted_price, '', 1) . ' ' . $currencies->display_price($discounted_price, zen_get_tax_rate(1), 1); ?></td>
+	    		<td class="main text-right"><?php echo $currencies->display_price_w($discounted_price_w, '', 1) . ' ' . $currencies->display_price_w($discounted_price_w, zen_get_tax_rate(1), 1); ?></td>
+                        <td class="main text-right"><?php echo ' x ' . number_format($discount_name[$i]['discount_qty']) . ' = ' . $currencies->display_price($discounted_price, '', $discount_name[$i]['discount_qty']) . ' ' . $currencies->display_price($discounted_price, zen_get_tax_rate(1), $discount_name[$i]['discount_qty']); ?></td>
+	    		<td class="main text-right"><?php echo ' x ' . number_format($discount_name[$i]['discount_qty']) . ' = ' . $currencies->display_price_w($discounted_price_w, '', $discount_name[$i]['discount_qty']) . ' ' . $currencies->display_price_w($discounted_price_w, zen_get_tax_rate(1), $discount_name[$i]['discount_qty']); ?></td>
+                      <?php } else { ?>
+                        <td class="main text-right"><?php echo $currencies->display_price($discounted_price, '', 1); ?></td>
+	    		<td class="main text-right"><?php echo $currencies->display_price($discounted_price_w, '', 1); ?></td>
+                        <td class="main text-right"><?php echo ' x ' . number_format($discount_name[$i]['discount_qty']) . ' = ' . $currencies->display_price($discounted_price, '', $discount_name[$i]['discount_qty']); ?></td>
+	    		<td class="main text-right"><?php echo ' x ' . number_format($discount_name[$i]['discount_qty']) . ' = ' . $currencies->display_price($discounted_price_w, '', $discount_name[$i]['discount_qty']); ?></td>
 // Dual Pricing end
                       <?php } ?>
                     </tr>
@@ -1160,9 +1179,9 @@ if (zen_not_null($action)) {
     </div>
     <!-- body_eof //-->
 
-<!-- footer //-->
-<?php require(DIR_WS_INCLUDES . 'footer.php'); ?>
-<!-- footer_eof //-->
-</body>
+    <!-- footer //-->
+    <?php require(DIR_WS_INCLUDES . 'footer.php'); ?>
+    <!-- footer_eof //-->
+  </body>
 </html>
 <?php require(DIR_WS_INCLUDES . 'application_bottom.php'); ?>
