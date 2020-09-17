@@ -4,7 +4,7 @@
  * @copyright Copyright 2003-2019 Zen Cart Development Team
  * @copyright Portions Copyright 2003 osCommerce
  * @license http://www.zen-cart.com/license/2_0.txt GNU Public License V2.0
- * @version $Id: DrByte 2019 Jan 04 Modified in v1.5.6a $
+ * @version $Id: DrByte 2019 Jul 16 Modified in v1.5.6c $
  */
 require('includes/application_top.php');
 
@@ -253,8 +253,8 @@ if (zen_not_null($action)) {
           array('fieldName' => 'customers_email_format', 'value' => $customers_email_format, 'type' => 'stringIgnoreNull'),
           array('fieldName' => 'customers_authorization', 'value' => $customers_authorization, 'type' => 'stringIgnoreNull'),
 /* Dual Pricing start */
-          array('fieldName' => 'customers_referral', 'value' => $customers_referral, 'type' => 'stringIgnoreNull'),
-	  array('fieldName'=>'customers_whole', 'value'=>$customers_whole, 'type'=>'stringIgnoreNull')
+                                array('fieldName'=>'customers_referral', 'value'=>$customers_referral, 'type'=>'stringIgnoreNull'),
+				array('fieldName'=>'customers_whole', 'value'=>$customers_whole, 'type'=>'stringIgnoreNull')
 /* Dual Pricing end */
         );
 
@@ -421,7 +421,7 @@ if (zen_not_null($action)) {
       break;
     default:
 /* Dual Pricing start */
-        $customers = $db->Execute("select c.customers_id, c.customers_gender, c.customers_firstname, c.customers_whole,
+        $customers = $db->Execute("SELECT c.customers_id, c.customers_gender, c.customers_firstname, c.customers_whole,
 /* Dual Pricing end */
                                         c.customers_lastname, c.customers_dob, c.customers_email_address,
                                         a.entry_company, a.entry_street_address, a.entry_suburb,
@@ -435,7 +435,12 @@ if (zen_not_null($action)) {
                                  WHERE a.customers_id = c.customers_id
                                  AND c.customers_id = " . (int)$customers_id);
 
-      $cInfo = new objectInfo($customers->fields);
+      $reviews = $db->Execute("SELECT COUNT(*) AS number_of_reviews
+                               FROM " . TABLE_REVIEWS . "
+                               WHERE customers_id = " . (int)$customers_id);
+
+      $cInfo_array = array_merge($customers->fields, $reviews->fields);
+      $cInfo = new objectInfo($cInfo_array);
   }
 }
 ?>
@@ -666,10 +671,10 @@ if (zen_not_null($action)) {
                     if ($entry_date_of_birth_error == true) {
                       echo zen_draw_input_field('customers_dob', ($cInfo->customers_dob == '0001-01-01 00:00:00' ? '' : zen_date_short($cInfo->customers_dob)), 'maxlength="10" class="form-control"') . '&nbsp;' . ENTRY_DATE_OF_BIRTH_ERROR;
                     } else {
-                      echo $cInfo->customers_dob . ($customers_dob == '0001-01-01 00:00:00' ? 'N/A' : zen_draw_hidden_field('customers_dob'));
+                      echo $cInfo->customers_dob . ((empty($customers_dob) || $customers_dob <= '0001-01-01' || $customers_dob == '0001-01-01 00:00:00') ? 'N/A' : zen_draw_hidden_field('customers_dob'));
                     }
                   } else {
-                    echo zen_draw_input_field('customers_dob', ($customers_dob == '0001-01-01 00:00:00' ? '' : zen_date_short($cInfo->customers_dob)), 'maxlength="10" class="form-control"', true);
+                    echo zen_draw_input_field('customers_dob', ((empty($cInfo->customers_dob) || $cInfo->customers_dob <= '0001-01-01' || $cInfo->customers_dob == '0001-01-01 00:00:00') ? '' : zen_date_short($cInfo->customers_dob)), 'maxlength="10" class="form-control"', true);
                   }
                   ?>
               </div>
@@ -696,7 +701,7 @@ if (zen_not_null($action)) {
                 }
                 ?>
             </div>
-				   </div>	
+          </div>
 <!--- Dual Pricing start --->
 			<div class="form-group">
 				<?php echo  zen_draw_label(ENTRY_WHOLESALE_PRICING_LEVEL, 'customers_whole', 'class="col-sm-3 control-label"'); ?>
@@ -706,7 +711,6 @@ if (zen_not_null($action)) {
 				</div>
 			</div>
 <!--- Dual Pricing end --->
-
         <?php
         if (ACCOUNT_COMPANY == 'true') {
           ?>
@@ -973,8 +977,8 @@ if (zen_not_null($action)) {
                 if ($processed == true) {
                   if ($cInfo->customers_group_pricing) {
                     $group_query = $db->Execute("SELECT group_name, group_percentage
-                                               FORM " . TABLE_GROUP_PRICING . "
-                                               WHERE group_id = " . (int)$cInfo->customers_group_pricing);
+                                                 FROM " . TABLE_GROUP_PRICING . "
+                                                 WHERE group_id = " . (int)$cInfo->customers_group_pricing);
                     echo $group_query->fields['group_name'] . '&nbsp;' . $group_query->fields['group_percentage'] . '%';
                   } else {
                     echo ENTRY_NONE;
@@ -982,7 +986,7 @@ if (zen_not_null($action)) {
                   echo zen_draw_hidden_field('customers_group_pricing', $cInfo->customers_group_pricing);
                 } else {
                   $group_array_query = $db->execute("SELECT group_id, group_name, group_percentage
-                                                   FROM " . TABLE_GROUP_PRICING);
+                                                     FROM " . TABLE_GROUP_PRICING);
                   $group_array[] = array('id' => 0, 'text' => TEXT_NONE);
                   foreach ($group_array_query as $item) {
                     $group_array[] = array(
@@ -1059,7 +1063,7 @@ if (zen_not_null($action)) {
               case "wholesale-desc":
               $disp_order = "c.customers_whole DESC";
 /* Dual Pricing end */
-            break;
+              break;
           case 'firstname':
             $disp_order = "c.customers_firstname";
             break;
@@ -1189,7 +1193,7 @@ if (zen_not_null($action)) {
                     <a href="<?php echo zen_href_link(basename($PHP_SELF), zen_get_all_get_params(array('list_order', 'page')) . 'list_order=group-desc', 'NONSSL'); ?>"><?php echo ($_GET['list_order'] == 'group-desc' ? '<span class="SortOrderHeader">Desc</span>' : '<span class="SortOrderHeaderLink">Desc</span>'); ?></a>
                   </th>
 
-                  <?php if (MODULE_ORDER_TOTAL_GV_STATUS == 'true') { ?>
+                  <?php if (defined('MODULE_ORDER_TOTAL_GV_STATUS') && MODULE_ORDER_TOTAL_GV_STATUS == 'true') { ?>
                     <th class="dataTableHeadingContent">
                       <?php echo (($_GET['list_order'] == 'gv_balance-asc' or $_GET['list_order'] == 'gv_balance-desc') ? '<span class="SortOrderHeader">' . TABLE_HEADING_GV_AMOUNT . '</span>' : TABLE_HEADING_GV_AMOUNT); ?><br>
                       <a href="<?php echo zen_href_link(basename($PHP_SELF), zen_get_all_get_params(array('list_order', 'page')) . 'list_order=gv_balance-asc', 'NONSSL'); ?>"><?php echo ($_GET['list_order'] == 'gv_balance-asc' ? '<span class="SortOrderHeader">Asc</span>' : '<span class="SortOrderHeaderLink">Asc</span>'); ?></a>&nbsp;
@@ -1355,7 +1359,7 @@ if (zen_not_null($action)) {
                 <td class="dataTableContent"><?php echo zen_date_short($info->fields['date_account_created']); ?></td>
                 <td class="dataTableContent"><?php echo zen_date_short($customer['customers_info_date_of_last_logon']); ?></td>
                 <td class="dataTableContent"><?php echo $group_name_entry; ?></td>
-                <?php if (MODULE_ORDER_TOTAL_GV_STATUS == 'true') { ?>
+                <?php if (defined('MODULE_ORDER_TOTAL_GV_STATUS') && MODULE_ORDER_TOTAL_GV_STATUS == 'true') { ?>
                   <td class="dataTableContent text-right"><?php echo $currencies->format($customer['amount']); ?></td>
                 <?php } ?>
                 <td class="dataTableContent text-center">
@@ -1363,7 +1367,7 @@ if (zen_not_null($action)) {
                       <?php echo zen_image(DIR_WS_IMAGES . 'icon_red_off.gif', IMAGE_ICON_STATUS_OFF); ?>
                       <?php
                     } else {
-                      echo zen_draw_form('setstatus', FILENAME_CUSTOMERS, 'action=status&cID=' . $customer['customers_id'] . (isset($_GET['page']) ? '&page=' . $_GET['page'] : '') . (isset($_GET['search']) ? '&search=' . $_GET['search'] : ''));
+                      echo zen_draw_form('setstatus_' . (int)$customer['customers_id'], FILENAME_CUSTOMERS, 'action=status&cID=' . $customer['customers_id'] . (isset($_GET['page']) ? '&page=' . $_GET['page'] : '') . (isset($_GET['search']) ? '&search=' . $_GET['search'] : ''));
                       ?>
                       <?php if ($customer['customers_authorization'] == 0) { ?>
                       <input type="image" src="<?php echo DIR_WS_IMAGES ?>icon_green_on.gif" title="<?php echo IMAGE_ICON_STATUS_ON; ?>" />
