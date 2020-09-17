@@ -4,7 +4,7 @@
  * @copyright Copyright 2003-2019 Zen Cart Development Team
  * @copyright Portions Copyright 2003 osCommerce
  * @license http://www.zen-cart.com/license/2_0.txt GNU Public License V2.0
- * @version $Id: DrByte 2019 Jan 04 Modified in v1.5.6a $
+ * @version $Id: Zen4All 2019 Jan 20 Modified in v1.5.6b $
  */
 if (!defined('IS_ADMIN_FLAG')) {
   die('Illegal Access');
@@ -50,7 +50,9 @@ $pInfo = new objectInfo($parameters);
 if (isset($_GET['pID']) && empty($_POST)) {
   $product = $db->Execute("SELECT pd.products_name, pd.products_description, pd.products_url,
                                   p.products_id, p.products_quantity, p.products_model,
-                                  p.products_image, p.products_price, p.products_virtual, p.products_weight,
+/* Dual Pricing start */
+                                      p.products_image, p.products_price, p.products_price_w, p.products_virtual, p.products_weight,
+/* Dual Pricing end */
                                   p.products_date_added, p.products_last_modified,
                                   date_format(p.products_date_available, '%Y-%m-%d') as
                                   products_date_available, p.products_status, p.products_tax_class_id,
@@ -309,14 +311,12 @@ for ($i = 0, $n = sizeof($tax_class_array); $i < $n; $i++) {
 <!--- Dual Pricing start --->
     <div class="form-group">
     	<?php echo zen_draw_label(TEXT_WHOLESALE_PRICE_NET, 'text_wholesale_price_net', 'class="col-sm-3 control-label"'); ?>
-
-	    <div class="col-sm-9 col-md-6">
-	    	<?php echo zen_draw_input_field('products_price_w', $pInfo->products_price_w, 'class="form-control"'); ?>
-			 
-			<?php echo TEXT_WHOLESALE_PRICE_COMMENT; ?>
-	    </div>
-<!--- Dual Pricing end --->
+	<div class="col-sm-9 col-md-6">
+		<?php echo zen_draw_input_field('products_price_w', $pInfo->products_price_w, 'class="form-control"'); ?>	 
+		<?php echo TEXT_WHOLESALE_PRICE_COMMENT; ?>
+	</div>
     </div>
+<!--- Dual Pricing end --->
   </div>
   <script>
     updateGross();
@@ -418,7 +418,7 @@ for ($i = 0, $n = sizeof($tax_class_array); $i < $n; $i++) {
         </div>
         <div class="row">&nbsp;</div>
         <div class="row">
-            <?php echo zen_draw_label(TEXT_IMAGE_CURRENT, 'products_previous_image', 'class="conrol-label"') . '&nbsp;' . ($pInfo->products_image != '' ? $pInfo->products_image : NONE); ?>
+            <?php echo zen_draw_label(TEXT_IMAGE_CURRENT, 'products_previous_image', 'class="control-label"') . '&nbsp;' . ($pInfo->products_image != '' ? $pInfo->products_image : NONE); ?>
             <?php echo zen_draw_hidden_field('products_previous_image', $pInfo->products_image); ?>
         </div>
         <div class="row">&nbsp;</div>
