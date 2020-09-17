@@ -5,7 +5,7 @@
  * @copyright Copyright 2003-2019 Zen Cart Development Team
  * @copyright Portions Copyright 2003 osCommerce
  * @license http://www.zen-cart.com/license/2_0.txt GNU Public License V2.0
- * @version $Id: DrByte 2019 Jan 04 Modified in v1.5.6a $
+ * @version $Id: DrByte 2019 May 25 Modified in v1.5.6b $
  */
 if (!defined('IS_ADMIN_FLAG')) {
   die('Illegal Access');
@@ -13,24 +13,23 @@ if (!defined('IS_ADMIN_FLAG')) {
 if (isset($_GET['pID'])) {
   $products_id = zen_db_prepare_input($_GET['pID']);
 }
-if (isset($_POST['edit_x']) || isset($_POST['edit_y'])) {
+if (isset($_POST['edit']) && $_POST['edit'] == 'edit') {
   $action = 'new_product';
 } elseif ((isset($_POST['products_model']) ? $_POST['products_model'] : '') . (isset($_POST['products_url']) ? implode('', $_POST['products_url']) : '') . (isset($_POST['products_name']) ? implode('', $_POST['products_name']) : '') . (isset($_POST['products_description']) ? implode('', $_POST['products_description']) : '') != '') {
   $products_date_available = zen_db_prepare_input($_POST['products_date_available']);
   $products_date_available = (date('Y-m-d') < $products_date_available) ? $products_date_available : 'null';
-
+// Dual Pricing start
+  $tmp_value = $_POST['products_price_w'];
+  $products_price_w = ($tmp_value == '' || !zen_not_null($tmp_value)) ? 0 : $tmp_value;
   // Data-cleaning to prevent data-type mismatch errors:
-  // Dual Pricing start
-    $tmp_value = $_POST['products_price_w'];
-    $products_price_w = ($tmp_value == '' || !zen_not_null($tmp_value)) ? 0 : $tmp_value;
   $sql_data_array = array(
-
-    'products_price_w' => $products_price_w,
-  /* Dual Pricing end */
-    'products_quantity' => convertToFloat($_POST['products_quantity']),
+    'products_quantity' => convertToFloat($_POST['products_quantity']),                         
     'products_type' => (int)$_POST['product_type'],
     'products_model' => zen_db_prepare_input($_POST['products_model']),
     'products_price' => convertToFloat($_POST['products_price']),
+// Dual Pricing start
+    'products_price_w' => convertToFloat($_POST['products_price_w']),
+// Dual Pricing end
     'products_date_available' => $products_date_available,
     'products_weight' => convertToFloat($_POST['products_weight']),
     'products_status' => (int)$_POST['products_status'],
@@ -49,7 +48,7 @@ if (isset($_POST['edit_x']) || isset($_POST['edit_y'])) {
     'products_sort_order' => (int)$_POST['products_sort_order'],
     'products_discount_type' => (int)$_POST['products_discount_type'],
     'products_discount_type_from' => (int)$_POST['products_discount_type_from'],
-    'products_price_sorter' => convertToFloat($_POST['products_price_sorter']),
+    'products_price_sorter' => convertToFloat($_POST['products_price_sorter'])
   );
 
   $db_filename = zen_limit_image_filename($_POST['products_image'], TABLE_PRODUCTS, 'products_image');
