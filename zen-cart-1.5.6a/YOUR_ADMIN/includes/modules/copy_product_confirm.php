@@ -35,7 +35,9 @@ if (isset($_POST['products_id']) && isset($_POST['categories_id'])) {
   } elseif ($_POST['copy_as'] == 'duplicate') {
     $old_products_id = (int)$products_id;
     $product = $db->Execute("SELECT products_type, products_quantity, products_model, products_image,
-                                    products_price, products_virtual, products_date_available, products_weight,
+/* Dual Pricing start */
+                                            products_price, products_price_w, products_virtual, products_date_available, products_weight,
+/* Dual Pricing end */
                                     products_tax_class_id, manufacturers_id,
                                     products_quantity_order_min, products_quantity_order_units, products_priced_by_attribute,
                                     product_is_free, product_is_call, products_quantity_mixed,
@@ -63,11 +65,17 @@ if (isset($_POST['products_id']) && isset($_POST['categories_id'])) {
     $products_quantity = (!zen_not_null($tmp_value) || $tmp_value == '' || $tmp_value == 0) ? 0 : $tmp_value;
     $tmp_value = zen_db_input($product->fields['products_price']);
     $products_price = (!zen_not_null($tmp_value) || $tmp_value == '' || $tmp_value == 0) ? 0 : $tmp_value;
+// Dual Pricing start
+            $tmp_value = zen_db_input($product->fields['products_price_w']);
+            $products_price_w = (!zen_not_null($tmp_value) || $tmp_value=='' || $tmp_value == 0) ? 0 : $tmp_value;
+// Dual Pricing end
     $tmp_value = zen_db_input($product->fields['products_weight']);
     $products_weight = (!zen_not_null($tmp_value) || $tmp_value == '' || $tmp_value == 0) ? 0 : $tmp_value;
 
     $db->Execute("INSERT INTO " . TABLE_PRODUCTS . " (products_type, products_quantity, products_model, products_image,
-                                                      products_price, products_virtual, products_date_added, products_date_available,
+/* Dual Pricing start */
+                                       products_price, products_price_w, products_virtual, products_date_added, products_date_available,
+/* Dual Pricing end */
                                                       products_weight, products_status, products_tax_class_id,
                                                       manufacturers_id, products_quantity_order_min, products_quantity_order_units,
                                                       products_priced_by_attribute, product_is_free, product_is_call, products_quantity_mixed,
@@ -78,6 +86,9 @@ if (isset($_POST['products_id']) && isset($_POST['categories_id'])) {
                           '" . zen_db_input($product->fields['products_model']) . "',
                           '" . zen_db_input($product->fields['products_image']) . "',
                           '" . $products_price . "',
+/* Dual Pricing start */
+				  '" . $products_price_w . "',
+/* Dual Pricing end */
                           '" . zen_db_input($product->fields['products_virtual']) . "',
                           now(),
                           " . (zen_not_null(zen_db_input($product->fields['products_date_available'])) ? "'" . zen_db_input($product->fields['products_date_available']) . "'" : 'null') . ",
