@@ -486,6 +486,8 @@ if ($_SESSION['customer_whole']) {
 	    return $final_display_price . $free_tag . $call_tag;
   }
 // Dual Pricing start
+//***This section works, but was not fully updated to integrate some new code. Compare to the function above it (zen_get_products_display_price). 
+//***It is missing the new sections that allow an observer to inject overrides and the syntax for the 'verify display of prices' doesn't match.
 // Display Price Retail
 // Specials and Tax Included
  function zen_get_products_display_retail_net_price($products_id) {
