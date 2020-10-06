@@ -22,6 +22,10 @@ if (isset($_POST['edit']) && $_POST['edit'] == 'edit') {
     $products_date_available = $dt->format('Y-m-d'); 
   }
   $products_date_available = (date('Y-m-d') < $products_date_available) ? $products_date_available : 'null';
+// Dual Pricing start
+  $tmp_value = $_POST['products_price_w'];
+  $products_price_w = ($tmp_value == '' || !zen_not_null($tmp_value)) ? 0 : $tmp_value;
+// Dual Pricing End
 
   // Data-cleaning to prevent data-type mismatch errors:
   $sql_data_array = array(
