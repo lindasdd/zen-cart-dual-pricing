@@ -34,7 +34,7 @@ if (isset($_POST['edit']) && $_POST['edit'] == 'edit') {
     'products_model' => zen_db_prepare_input($_POST['products_model']),
     'products_price' => convertToFloat($_POST['products_price']),
 // Dual Pricing start
-    'products_price_w' => convertToFloat($_POST['products_price_w']),
+    'products_price_w' => zen_db_prepare_input($_POST['products_price_w']),
 // Dual Pricing end
     'products_date_available' => $products_date_available,
     'products_weight' => convertToFloat($_POST['products_weight']),
