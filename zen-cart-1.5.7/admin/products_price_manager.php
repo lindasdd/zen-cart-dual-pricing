@@ -987,7 +987,7 @@ if (zen_not_null($action)) {
               $discount_name[] = array('id' => $i,
                 'discount_qty' => $discount_qty['discount_qty'],
 // Dual Pricing start
-		'discount_price_w' => $discounts_qty['discount_price_w'],
+		'discount_price_w' => $discount_qty->fields['discount_price_w'],
 // Dual Pricing end
                 'discount_price' => $discount_qty['discount_price']);
             }
